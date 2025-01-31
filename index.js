@@ -33,38 +33,31 @@
 
 
 const express = require('express');
-const bodyParser = require('body-parser') 
-const cors = require('cors')
-const fs = require('fs')
+const { resolve } = require('path');
+const bodyParser = require ("body-parser")
+
 
 const app = express();
 const port = 3010;
-app.use(cors());
 app.use(bodyParser.json())
+const students = require("./data.json")
+
 app.use(express.static('static'));
 
 app.post('/students/above-threshold', (req, res) => {
-  const {threshold} = req.body;
+  const { threshold } = req.body;
 
-  if(typeof threshold !== "number" || threshold<0){
-    return res.status(400).json({Error:"In valid thersold value. It must be a positive integer"})
+  if (typeof threshold !== 'number' || isNaN(threshold)) {
+    return res.json({count:0,
+      students: [ ] });
   }
 
-  fs.readFile("data.json","utf8",(err,data)=>{
-    if(err){
-      console.log("error on reading file:" ,err)
-      return res.status(500).json({error:"Internal server error"})
-    }
-    const studentsData = JSON.parse(data)
-    const filteredStudents = studentsData
-    .filter(student => student.total > threshold)
-    .map(student => ({ name: student.name, total: student.total }));
+  const filteredStudents = students.filter(student => student.total > threshold);
 
-    res.json({
-      count: filteredStudents.length,
-      students: filteredStudents
-    })
-  })
+   res.json({
+    count: filteredStudents.length,
+    students: filteredStudents.map(student => ({ name: student.name, total: student.total }))
+  });
 });
 
 app.listen(port, () => {
